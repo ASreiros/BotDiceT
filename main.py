@@ -9,45 +9,97 @@ print('Starting up bot...')
 TOKEN = os.environ.get("BOT_TOKEN")
 BOT_USERNAME = '@DiceRollerD20_bot'
 
-
-# Lets us use the /start command
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text('Lets roll some dices. ')
+    await update.message.reply_text('Lets roll some dices. Type /roll, /help or /list for full list of commands')
 
 
-# Lets us use the /help command
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text('Try typing /roll and I will provide keyboard for rolling. ')
+    await update.message.reply_text('Try typing /roll (/r) or /rolls (/s) and I will provide keyboard for rolling. You can also try writing something similar to 3d8. Or d and dd for d20. For full list of commands try /list')
 
-def roll_dice(d):
-    result = random.randint(1, int(d))
-    print(d)
-    text = f"You rolled 1d{d}. Your result is: {result}"
+async def list_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    list_commands = "Below is the list of my commands: \n \n"
+    command_data = {
+        "/start": "Gives greetings",
+        "/help": "gives description of bot functionality",
+        "/list": "Gives list of commands",
+        "/d": "Rolls 1d20",
+        "/roll": "Gives keyboard with availible dices. For example 1d8",
+        "/r": "Short for /roll",
+        "/rolls": "Gives keyboard with multiple dices. For example 5d4",
+        "/s": "Short for /rolls",
+        "d": "Rolls 1d20",
+        "dd": "Rolls 2d20",
+        "other": "You also can just type number of valid dices to roll and I will roll if i will understand you. For example 3d12"
+    }
+    for key, value in command_data.items():
+        list_commands += f"{key}: {value} \n"
+    await update.message.reply_text(list_commands)
+
+async def d_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = roll_dice([1, 20])
+    await update.message.reply_text(text)
+
+def roll_dice(values):
+    result = ""
+    number_of_dices = int(values[0])
+    rolls = []
+    text = f"You rolled {values[0]}d{values[1]}. "
+
+    if int(values[0]) == 0 or int(values[1]) == 0:
+        text += "I'm polite, so I wont tell you how you should use that 0. But try to figure it out yourself."
+        return text
+    if int(values[0]) > 100:
+        text += "I wont roll more then 100 dices. You do it."
+        return text
+
+    for n in range(number_of_dices):
+        roll = random.randint(1, int(values[1]))
+        rolls.append(roll)
+    rolls.sort(reverse=True)
+    for number in rolls:
+        result += f"{number}  "
+    text += f" Your result is: {result} \n"
+    if int(values[1]) == 20:
+        text += f"Best roll is {rolls[0]}, worst roll is {rolls[-1]}"
+    else:
+        text += f"Total is: {sum(rolls)}"
     return text
 
-# Lets us use the /roll command, it gives 1d20 roll
 async def roll_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Sends a message with three inline buttons attached."""
     keyboard = [
         [
-            InlineKeyboardButton("1d3", callback_data="3"),
-            InlineKeyboardButton("1d4", callback_data="4"),
+            InlineKeyboardButton("1d3", callback_data="1 3"),
+            InlineKeyboardButton("1d4", callback_data="1 4"),
         ],
         [
-            InlineKeyboardButton("1d6", callback_data="6"),
-            InlineKeyboardButton("1d8", callback_data="8"),
+            InlineKeyboardButton("1d6", callback_data="1 6"),
+            InlineKeyboardButton("1d8", callback_data="1 8"),
         ],
         [
-            InlineKeyboardButton("1d10", callback_data="10"),
-            InlineKeyboardButton("1d12", callback_data="12"),
+            InlineKeyboardButton("1d10", callback_data="1 10"),
+            InlineKeyboardButton("1d12", callback_data="1 12"),
         ],
-        [InlineKeyboardButton("1d20", callback_data="20")],
+        [InlineKeyboardButton("1d20", callback_data="1 20")],
     ]
 
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     await update.message.reply_text("Please choose:", reply_markup=reply_markup)
 
+
+async def rolls_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    dices = [4, 6, 8, 10, 12, 20]
+    keyboard = []
+    for d in dices:
+        line = []
+        for n in range(1, 9):
+            dice_button = InlineKeyboardButton(f"{n}d{d}", callback_data=f"{n} {d}")
+            line.append(dice_button)
+        keyboard.append(line)
+
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    await update.message.reply_text("Please choose:", reply_markup=reply_markup)
 
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Parses the CallbackQuery and updates the message text."""
@@ -57,23 +109,30 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Some clients may have trouble otherwise. See https://core.telegram.org/bots/api#callbackquery
     await query.answer()
 
-    await query.edit_message_text(text=roll_dice(query.data))
+    await query.edit_message_text(text=roll_dice(query.data.split(" ")))
 
 
 def handle_response(text: str) -> str:
     # Create your own response logic
     processed: str = text.lower()
+    if processed == "d":
+        return roll_dice([1, 20])
+    if processed == "dd":
+        return roll_dice([2, 20])
 
-    if 'hello' in processed:
-        return 'Hey there!'
+    if 'd' in processed:
+        parts = processed.split("d")
+        if not len(parts) == 2:
+            return None
+        if parts[0] == "":
+            parts[0] = "1"
+        if parts[1].isdigit() and parts[0].isdigit():
+            return roll_dice(parts)
+        else:
+            return None
+    else:
+        return None
 
-    if 'how are you' in processed:
-        return 'I\'m good!'
-
-    if 'i love python' in processed:
-        return 'Remember to subscribe!'
-
-    return 'I don\'t understand'
 
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -81,23 +140,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message_type: str = update.message.chat.type
     text: str = update.message.text
 
-    # Print a log for debugging
-    print(f'User ({update.message.chat.id}) in {message_type}: "{text}"')
-
-    # React to group messages only if users mention the bot directly
-    if message_type == 'group':
-        # Replace with your bot username
-        if BOT_USERNAME in text:
-            new_text: str = text.replace(BOT_USERNAME, '').strip()
-            response: str = handle_response(new_text)
-        else:
-            return  # We don't want the bot respond if it's not mentioned in the group
+    response: str = handle_response(text)
+    if response:
+        await update.message.reply_text(response)
     else:
-        response: str = handle_response(text)
-
-    # Reply normal if the message is in private
-    print('Bot:', response)
-    await update.message.reply_text(response)
+        return
 
 
 # Log errors
@@ -111,9 +158,13 @@ if __name__ == '__main__':
 
     # Commands
     app.add_handler(CommandHandler('start', start_command))
+    app.add_handler(CommandHandler('list', list_command))
     app.add_handler(CommandHandler('help', help_command))
     app.add_handler(CommandHandler('roll', roll_command))
     app.add_handler(CommandHandler('r', roll_command))
+    app.add_handler(CommandHandler('rolls', rolls_command))
+    app.add_handler(CommandHandler('s', rolls_command))
+    app.add_handler(CommandHandler('d', d_command))
     app.add_handler(CallbackQueryHandler(button))
 
     # Messages
