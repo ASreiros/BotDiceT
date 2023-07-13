@@ -1,12 +1,12 @@
-import os
 import random
+import keys
 # pip install python-telegram-bot
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, CallbackQueryHandler
 
 print('Starting up bot...')
 
-TOKEN = os.environ.get("BOT_TOKEN")
+TOKEN = keys.BOT_TOKEN
 BOT_USERNAME = '@DiceRollerD20_bot'
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -94,7 +94,10 @@ async def rolls_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = []
     for d in dices:
         line = []
-        for n in range(1, 6):
+        range_stop = 7
+        if d == 20:
+            range_stop = 3
+        for n in range(1, range_stop):
             dice_button = InlineKeyboardButton(f"{n}d{d}", callback_data=f"{n} {d}")
             line.append(dice_button)
         keyboard.append(line)
