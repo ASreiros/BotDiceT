@@ -61,6 +61,8 @@ def roll_dice(values):
     text += f" Your result is: {result} \n"
     if int(values[1]) == 20:
         text += f"Best roll is {rolls[0]}, worst roll is {rolls[-1]}"
+    elif int(values[0]) == 4 and int(values[1]) == 6:
+        text += f"Total is: {sum(rolls)}. Best 3 rolls sum is {sum(rolls)-rolls[-1]}"
     else:
         text += f"Total is: {sum(rolls)}"
     return text
@@ -68,7 +70,7 @@ def roll_dice(values):
 async def roll_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [
-            InlineKeyboardButton("1d3", callback_data="1 3"),
+            InlineKeyboardButton("1d2", callback_data="1 2"),
             InlineKeyboardButton("1d4", callback_data="1 4"),
         ],
         [
@@ -92,7 +94,7 @@ async def rolls_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = []
     for d in dices:
         line = []
-        for n in range(1, 9):
+        for n in range(1, 6):
             dice_button = InlineKeyboardButton(f"{n}d{d}", callback_data=f"{n} {d}")
             line.append(dice_button)
         keyboard.append(line)
