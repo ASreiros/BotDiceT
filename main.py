@@ -1,7 +1,7 @@
 import random
 import keys
 # pip install python-telegram-bot
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, CallbackQueryHandler
 
 print('Starting up bot...')
@@ -43,6 +43,7 @@ def roll_dice(values):
     result = ""
     number_of_dices = int(values[0])
     rolls = []
+    sorted_rolls = []
     text = f"You rolled {values[0]}d{values[1]}. "
 
     if int(values[0]) == 0 or int(values[1]) == 0:
@@ -55,16 +56,15 @@ def roll_dice(values):
     for n in range(number_of_dices):
         roll = random.randint(1, int(values[1]))
         rolls.append(roll)
-    rolls.sort(reverse=True)
     for number in rolls:
         result += f"{number}  "
     text += f" Your result is: {result} \n"
-    if int(values[1]) == 20:
-        text += f"Best roll is {rolls[0]}, worst roll is {rolls[-1]}"
+    if int(values[1]) == 20 and int(values[0]) > 1:
+        text += f"Best: {max(rolls)}, worst: {min(rolls)}"
     elif int(values[0]) == 4 and int(values[1]) == 6:
-        text += f"Total is: {sum(rolls)}. Best 3 rolls sum is {sum(rolls)-rolls[-1]}"
-    else:
-        text += f"Total is: {sum(rolls)}"
+        text += f"Total is: {sum(rolls)}. Best 3 rolls sum is {sum(rolls)-min(rolls)}"
+    elif int(values[0]) > 1:
+        text += f"Total is: {sum(rolls)}, Best: {max(rolls)}, worst: {min(rolls)}"
     return text
 
 async def roll_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -84,13 +84,13 @@ async def roll_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton("1d20", callback_data="1 20")],
     ]
 
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    reply_markup = ReplyKeyboardMarkup(keyboard)
 
     await update.message.reply_text("Please choose:", reply_markup=reply_markup)
 
 
 async def rolls_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    dices = [4, 6, 8, 10, 12, 20]
+    dices = [20, 4, 6, 8, 10, 12]
     keyboard = []
     for d in dices:
         line = []
@@ -102,7 +102,7 @@ async def rolls_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             line.append(dice_button)
         keyboard.append(line)
 
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    reply_markup = ReplyKeyboardMarkup(keyboard)
 
     await update.message.reply_text("Please choose:", reply_markup=reply_markup)
 
